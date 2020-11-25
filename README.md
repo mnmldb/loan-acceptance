@@ -17,7 +17,7 @@ Thus in this project using data from Home Credit, a consumer finance providers, 
 - Marital Status
 
 ## Data Source and Prep
-Data is from [Home Credit](https://www.kaggle.com/c/home-credit-default-risk/overview) Default Risk (121 independent variables in the application_train data set plus additional independent variables in supplementary files): https://www.kaggle.com/c/home-credit-default-risk/overview
+Data is from [Home Credit](https://www.kaggle.com/c/home-credit-default-risk/overview) Default Risk (121 independent variables in the application_train data set plus additional independent variables in supplementary files): *https://www.kaggle.com/c/home-credit-default-risk/overview*
 
 67 out of 121 columns in the data set have missing values. For the models that do not work with missing values, we are going to fill them by some representative values (mean, median, etc.) or forecasted values by other variables. 6 out of 121 columns in the data set consist of categorical variables. The number of levels differs from 2 to 58. We are going to use appropriate encoding methods such as one-hot encoding, label encoding, frequency encoding, and target encoding depending on the feature of each column.
 
@@ -27,3 +27,11 @@ We would like to identify the outliers of numerical variables using histograms a
 
 ## Modeling and Assessment Strategy
 We will be using multilinear regression to predict the payback potential of each client based on various independent variables. As the independent variable is either of 0 (no payback) or 1 (payback), we will see the model performance by area under the ROC curve. We will be using algorithms such as Logistic Regression, Linear Discriminant Analysis, Quadratic Discriminant Analysis, K-Nearest Neighbors, Support Vector Machines, Random Forest, Gradient Boosting Decision Tree (e.g. XGBoost), and Neural Network covered in “An Introduction to Statistical Learning” and popular algorithms in machine learning competitions. Also, we will be testing the ensemble method of several models to see if it would improve the score.
+
+## Folder Structure
+~~~
+.
+├── EDA            # Exploratory data analysis
+├── Modeling       # Main code for modeling
+└── README.md
+~~~
