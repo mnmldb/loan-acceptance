@@ -6,6 +6,9 @@ Working/
 Old/
 Raw_Data/
 Processed_Data/
+raw_data/
+processed_data/
+working/
 
 ## extension
 *.pdf

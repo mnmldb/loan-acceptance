@@ -1,11 +1,8 @@
 # Delete all variables
 rm(list=ls())
-   
-# Set working directory
-setwd("./Train_Test_Split")
 
 # Import raw data
-df_all <- read.csv("../Raw_Data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
+df_all <- read.csv("./raw_data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
 dim(df_all) # 307511 x 122
 
 # Set column names used for stratified sampling
@@ -57,5 +54,5 @@ df_train[df_train$SK_ID_CURR == test_id[1],] # 0 rows
 df_test[df_test$SK_ID_CURR == test_id[1],] # 1 row
 
 # Export
-write.table(df_train, "../Processed_Data/train_raw.csv")
-write.table(df_test, "../Processed_Data/test_raw.csv")
+write.csv(df_train, "./Processed_Data/train_raw.csv", row.names=FALSE, na="")
+write.csv(df_test, "./Processed_Data/test_raw.csv", row.names=FALSE, na="")

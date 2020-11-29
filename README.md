@@ -29,9 +29,17 @@ We would like to identify the outliers of numerical variables using histograms a
 We will be using multilinear regression to predict the payback potential of each client based on various independent variables. As the independent variable is either of 0 (no payback) or 1 (payback), we will see the model performance by area under the ROC curve. We will be using algorithms such as Logistic Regression, Linear Discriminant Analysis, Quadratic Discriminant Analysis, K-Nearest Neighbors, Support Vector Machines, Random Forest, Gradient Boosting Decision Tree (e.g. XGBoost), and Neural Network covered in “An Introduction to Statistical Learning” and popular algorithms in machine learning competitions. Also, we will be testing the ensemble method of several models to see if it would improve the score.
 
 ## Folder Structure
+as of November 29th
 ~~~
 .
-├── EDA            # Exploratory data analysis
-├── Modeling       # Main code for modeling
+├── train_test_split              # Separate training and test data
+│      └── train_test_split.R
+├── eda                           # Exploratory data analysis
+│      ├── eda_draft.R           # Draft for eda.R
+│      └── eda.R                 # Work in progress
+├── modeling                      # Main code for modeling
+│      └── baseline.R            # Draft
+├── raw_data                      # Store raw data downloaded from Kaggle (git ignored)
+├── processed_data                # Store processed data (git ignored)
 └── README.md
 ~~~
