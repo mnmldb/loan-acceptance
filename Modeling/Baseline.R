@@ -6,7 +6,7 @@ rm(list=ls())
 setwd("~/Documents/UCLA_Extension/Final_Project")
 
 # Import home credit data
-df_all <- read.csv("./Data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
+df_all <- read.csv("../Raw_Data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
 dim(df_all) # 307511 x 122
 
 # Set column names not used for baseline model

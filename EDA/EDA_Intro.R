@@ -6,7 +6,7 @@ rm(list=ls())
 setwd("~/Documents/UCLA_Extension/Final_Project")
 
 # import training data
-app_train <- read.csv("./Data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
+app_train <- read.csv("../Raw_Data/application_train.csv", header=T, sep=",", na.strings=c('', 'NULL', '""')) # need na.strings to capture all missing values pattern
 dim(app_train) # 307511 x 122
 head(app_train)
 names(app_train) # column names
