@@ -54,5 +54,5 @@ df_train[df_train$SK_ID_CURR == test_id[1],] # 0 rows
 df_test[df_test$SK_ID_CURR == test_id[1],] # 1 row
 
 # Export
-write.csv(df_train, "./Processed_Data/train_raw.csv", row.names=FALSE, na="")
-write.csv(df_test, "./Processed_Data/test_raw.csv", row.names=FALSE, na="")
+write.csv(df_train, "./processed_data/train_raw.csv", row.names=FALSE, na="")
+write.csv(df_test, "./processed_data/test_raw.csv", row.names=FALSE, na="")
