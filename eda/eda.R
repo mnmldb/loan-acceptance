@@ -102,3 +102,91 @@ df_train_semicat_summary <- inner_join(df_train_semicat_unique, df_train_semicat
 df_train_int_summary <- inner_join(df_train_int_unique, df_train_int_na, by="Variable")
 df_train_num_summary <- inner_join(df_train_num_unique, df_train_num_na, by="Variable")
 
+# Majority of semi-categorical variables consist of "Flag" or "Rating"
+# Exclude them for the time being
+
+# Missing values cut-off: columns with more than 10% missing values are excluded (20% might be the best practice)
+# Category numbers cut-off: columns with categories more than 6 are excluded
+col_cat_use <- df_train_cat_summary %>%
+  dplyr::filter(Missing_Values_Percent < .1) %>%
+  dplyr::filter(Categories < 7) %>%
+  dplyr::select(Variable) # 7
+
+col_int_use <- df_train_int_summary %>%
+  dplyr::filter(Missing_Values_Percent < .1) %>%
+  dplyr::select(Variable) # 11
+
+col_num_use <- df_train_num_summary %>%
+  dplyr::filter(Missing_Values_Percent < .1) %>%
+  dplyr::select(Variable) # 7
+
+# Create the new data frame with necessary columns
+df_train_processed <- df_train %>%
+  dplyr::select(as.vector(unlist(rbind(col_cat_use, col_int_use, col_num_use)))) 
+
+## Fill missing values
+# As the number of missing values are small now, we fill them by median
+col_cat_use_na <- df_train_cat_summary %>%
+  dplyr::semi_join(col_cat_use, by="Variable") %>%
+  dplyr::filter(Missing_Values != 0) %>%
+  dplyr::select(Variable) # 0
+
+col_int_use_na <- df_train_int_summary %>%
+  dplyr::semi_join(col_int_use, by="Variable") %>%
+  dplyr::filter(Missing_Values != 0) %>%
+  dplyr::select(Variable) # 6
+
+col_num_use_na <- df_train_num_summary %>%
+  dplyr::semi_join(col_num_use, by="Variable") %>%
+  dplyr::filter(Missing_Values != 0) %>%
+  dplyr::select(Variable) # 3
+
+# <reference> converting a data frame to a vector: https://stackoverflow.com/questions/2545228/convert-a-dataframe-to-a-vector-by-rows
+# Calculate median by columns
+na_median <- df_train %>%
+  dplyr::select(as.vector(unlist(rbind(col_int_use_na, col_num_use_na)))) %>%
+  sapply(median, na.rm=TRUE)
+
+# Loop to fill missing values
+for (i in 1:length(na_median)) {
+  na_column <- names(na_median)[i]
+  na_index_train <- is.na(df_train_processed[, na_column])
+  df_train_processed[na_index_train, na_column] <- na_median[i]
+} 
+
+# Sanity check
+df_train_processed %>%
+  is.na %>%
+  sum # 0
+
+## One hot encoding
+# <reference> https://www.rdocumentation.org/packages/makedummies/versions/1.2.1
+# install.packages("makedummies")
+library(makedummies)
+
+for (i in 1:length(unlist(col_cat_use))) {
+  col <- unlist(col_cat_use)[i]
+  dat <- data.frame(x = factor(df_train_processed[, col]))
+  dummies <- makedummies(dat, basal_level = TRUE)
+  df_train_processed <- cbind(df_train_processed, dummies)
+}
+
+# Remove categorical variables and add target
+df_train_processed <- df_train_processed[, -which(colnames(df_train_processed) %in% unlist(col_cat_use))]
+df_train_processed <- cbind(df_train$TARGET, df_train_processed)
+colnames(df_train_processed)[1] <- "TARGET"
+
+# Calculate correlation with target
+cor_train <- c()
+for (i in 1:length(colnames(df_train_processed))) {
+   cor_tmp <- df_train_processed[, colnames(df_train_processed)[i]] %>%
+    cor(df_train_processed$TARGET)
+   cor_train <- c(cor_train, cor_tmp)
+}
+
+df_cor_train <- data.frame(colnames(df_train_processed), cor_train)
+colnames(df_cor_train) <- c("Variable", "Correlation")
+df_cor_train <- df_cor_train %>%
+  dplyr::filter(Variable != "TARGET") %>%
+  dplyr::arrange(desc(Correlation))
+
