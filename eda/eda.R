@@ -55,7 +55,7 @@ cat <- c()
 for (i in 1:length(col_cat)){ # use loop instead of sapply
   cat <- append(cat, dim(table(df_train_cat[col_cat[i]])))
 }
-df_train_cat_unique <- data.frame(col_char, cat)
+df_train_cat_unique <- data.frame(col_cat, cat)
 colnames(df_train_cat_unique) <- c("Variable", "Categories")
 df_train_cat_unique # number of categories
 
