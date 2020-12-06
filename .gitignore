@@ -9,6 +9,7 @@ Processed_Data/
 raw_data/
 processed_data/
 working/
+_rstudio_projects/
 
 ## extension
 *.pdf

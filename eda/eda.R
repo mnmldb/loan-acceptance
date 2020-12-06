@@ -1,7 +1,6 @@
 # ===================================================================================================
 # 1. Preparation
 # ===================================================================================================
-
 # Delete all variables
 rm(list=ls())
 
@@ -211,9 +210,94 @@ ggplot(df_cor_train, aes(x = reorder(Variable, Correlation), y = Correlation)) +
   theme(axis.text=element_text(size=7), axis.title=element_text(size=9), plot.title=element_text(size=12, face="bold")) +
   coord_flip() 
 
+# Findings
+# - The fact that EXT_SOURCE_2 has the strongest negative correlation suggests that we should also take a look at similar variables which are EXT_SOURCE_1 and EXT_SOURCE_2h
+# - Demographic features such as DAYS_BIRTH and DAYS_EMPLOYED have the strong correlation
+# - The client financial information such as AMT_GOODS_PRICE, AMT_CREDIT, AMT_ANNUITY, AMT_INCOME_TOTAL is important
 
-  
+# ===================================================================================================
+# 6. Distribution by Target
+# ===================================================================================================
+# Distribution of EXT_SOURCE_1 by target
+df_train %>%
+  ggplot(aes(x=EXT_SOURCE_1, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
 
+# Distribution of EXT_SOURCE_2 by target
+df_train %>%
+  ggplot(aes(x=EXT_SOURCE_2, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
 
+# Distribution of EXT_SOURCE_3 by target
+df_train %>%
+  ggplot(aes(x=EXT_SOURCE_3, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
 
+# Distribution of DAYS_BIRTH by target
+df_train %>%
+  ggplot(aes(x=DAYS_BIRTH, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
 
+# Distribution of DAYS_EMPLOYED by target: anomaly detected
+df_train %>%
+  ggplot(aes(x=DAYS_EMPLOYED, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of DAYS_REGISTRATION by target
+df_train %>%
+  ggplot(aes(x=DAYS_REGISTRATION, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of DAYS_LAST_PHONE_CHANGE by target
+df_train %>%
+  ggplot(aes(x=DAYS_LAST_PHONE_CHANGE, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of DAYS_LAST_PHONE_CHANGE by target
+df_train %>%
+  ggplot(aes(x=DAYS_ID_PUBLISH, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of AMT_GOODS_PRICE by target
+df_train %>%
+  ggplot(aes(x=AMT_GOODS_PRICE, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of AMT_CREDIT by target
+df_train %>%
+  ggplot(aes(x=AMT_CREDIT, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of AMT_ANNUITY by target
+df_train %>%
+  ggplot(aes(x=AMT_ANNUITY, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
+
+# Distribution of AMT_INCOME_TOTAL by target: anomaly detected
+df_train %>%
+  ggplot(aes(x=AMT_INCOME_TOTAL, fill=as.factor(TARGET))) +
+  geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
+  scale_fill_npg() +
+  scale_color_npg()
