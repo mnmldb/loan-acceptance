@@ -1,9 +1,14 @@
-### 1. Preparation ###
+# ===================================================================================================
+# 1. Preparation
+# ===================================================================================================
+
 # Delete all variables
 rm(list=ls())
 
 # Import packages
 library(dplyr)
+library(ggplot2)
+library(ggsci)
 
 # Import training and test data
 df_train <- read.csv("./processed_data/train_raw.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE) # need na.strings to capture all missing values pattern
@@ -12,13 +17,17 @@ df_test <- read.csv("./processed_data/test_raw.csv", header=T, sep=",", na.strin
 n_train <- dim(df_train)[1] # 251321
 n_test <- dim(df_test)[1] # 56190
 
-### 2. Target Distribution ###
+# ===================================================================================================
+# 2. Target Distribution
+# ===================================================================================================
 # Target is inbalanced
 barplot(table(df_train$TARGET), main="Target Distribution", xlab="Target", ylab="Count")
 table(df_train$TARGET) # 0: 230843, 1: 20478
 table(df_train$TARGET)[2] / (table(df_train$TARGET)[1] + table(df_train$TARGET)[2]) * 100 # 1 accounts for approximately 8%
 
-### 3. Variable Type ###
+# ===================================================================================================
+# 3. Variable Type
+# ===================================================================================================
 # Variable type
 var_type <- sapply(df_train[, -which(colnames(df_train) %in% c("TARGET", "SK_ID_CURR"))], class) # exclude the customer id and target column
 table(var_type) # character: 16, integer: 52, numeric: 52
@@ -59,7 +68,9 @@ df_train_cat_unique <- data.frame(col_cat, cat)
 colnames(df_train_cat_unique) <- c("Variable", "Categories")
 df_train_cat_unique # number of categories
 
-### 4. Missing Values ###
+# ===================================================================================================
+# 4. Missing Values
+# ===================================================================================================
 # Count missing values
 na_cat <- sapply(df_train_cat, function(y) sum(is.na(y)))
 na_semicat <- sapply(df_train_semicat, function(y) sum(is.na(y)))
@@ -92,7 +103,9 @@ df_train_semicat_na
 df_train_int_na
 df_train_num_na
 
-### 5. Variable Selection ###
+# ===================================================================================================
+# 5. Variable Selection
+# ===================================================================================================
 # Converting summary to data frame
 # https://stackoverflow.com/questions/30520350/convert-summary-to-data-frame
 # as.data.frame(apply(df_train_int, 2, summary))
@@ -166,7 +179,8 @@ library(makedummies)
 
 for (i in 1:length(unlist(col_cat_use))) {
   col <- unlist(col_cat_use)[i]
-  dat <- data.frame(x = factor(df_train_processed[, col]))
+  dat <- data.frame(factor(df_train_processed[, col]))
+  colnames(dat) <- col
   dummies <- makedummies(dat, basal_level = TRUE)
   df_train_processed <- cbind(df_train_processed, dummies)
 }
@@ -189,4 +203,17 @@ colnames(df_cor_train) <- c("Variable", "Correlation")
 df_cor_train <- df_cor_train %>%
   dplyr::filter(Variable != "TARGET") %>%
   dplyr::arrange(desc(Correlation))
+
+# Visualize the correlation
+ggplot(df_cor_train, aes(x = reorder(Variable, Correlation), y = Correlation)) +
+  geom_bar(stat = "identity") +
+  labs(x="Variables", y="Correlation", title="Correlation with Target")  +
+  theme(axis.text=element_text(size=7), axis.title=element_text(size=9), plot.title=element_text(size=12, face="bold")) +
+  coord_flip() 
+
+
+  
+
+
+
 
