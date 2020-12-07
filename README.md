@@ -32,17 +32,22 @@ We will be using multilinear regression to predict the payback potential of each
 as of December 2nd
 ~~~
 .
-├── train_test_split                    # Separate training and test data
-│      └── train_test_split.R
+├── train_test_split                    # Split training and test data
+│      └── train_test_split.R           # Split application_train.csv by 70% for training set and 30% for test set and export as train_raw.csv and test_raw.csv
 ├── eda                                 # Exploratory data analysis
-│      ├── eda_draft.R                  # Draft for eda.R
-│      └── eda.R                        # Work in progress
+│      ├── eda.R                        # Variable understanding and selection
+│      └── eda_draft.R                  # Draft for eda.R (not used)
+├── feature_engineering                 # Feature engineering
+│      └── feature_engineering.R        # Processing on train_raw.csv and test_raw.csv and export as train_model.csv and test_model.csv
 ├── modeling                            # Main code for modeling
-│      └── baseline.R                   # Draft
+│      ├── modeling.R                   # WIP
+│      └── baseline.R                   # Draft for modeling.R (not used)
 ├── (raw_data)                          # Store raw data downloaded from Kaggle (git ignored)
 │      └── application_train.csv
 ├── (processed_data)                    # Store processed data (git ignored)
 │      ├── train_raw.csv
-│      └── test_raw.csv
+│      ├── test_raw.csv
+│      ├── train_model.csv
+│      └── test_model.csv
 └── README.md
 ~~~
