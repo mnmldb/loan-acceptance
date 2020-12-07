@@ -10,6 +10,7 @@ library(ROCR)
 library(MASS)
 library(class)
 library(randomForest)
+library(tree)
 
 # Import training and test data
 df_train_all <- read.csv("./processed_data/train_model.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE)
@@ -149,4 +150,45 @@ set.seed(1)
 model_fr <- randomForest(TARGET~., data=df_train)
 
 # Important features
-model_fr <- randomForest(TARGET~.EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3+DAYS_BIRTH, data=df_train)
+model_rf <- randomForest(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3+DAYS_BIRTH, data=df_train)
+# Warning message:
+#  In randomForest.default(m, y, ...) :
+#  The response has five or fewer unique values.  Are you sure you want to do regression?
+pred_test_rf <- predict(model_rf, newdata=df_test)
+importance(model_rf)
+
+prep_rf <- prediction(pred_test_rf, df_test$TARGET)
+perf_rf <- performance(prep_rf, "tpr", "fpr")
+plot(perf_rf)
+auc_rf <- performance(prep_rf, "auc")
+auc_rf <- as.numeric(auc_rf@y.values)
+print(auc_rf) # score: 0.636467
+
+# ===================================================================================================
+# 6. Decision Tree
+# ===================================================================================================
+# All features
+model_tr <- tree(TARGET~., data=df_train)
+summary(model_tr)
+plot(model_tr)
+pred_test_tr <- predict(model_tr, newdata=df_test)
+
+prep_tr <- prediction(pred_test_tr, df_test$TARGET)
+perf_tr <- performance(prep_tr, "tpr", "fpr")
+plot(perf_tr)
+auc_tr <- performance(prep_tr, "auc")
+auc_tr <- as.numeric(auc_tr@y.values)
+print(auc_tr) # score: 0.6141351
+
+# Important features
+model_tr <- tree(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3+DAYS_BIRTH, data=df_train)
+summary(model_tr)
+plot(model_tr)
+pred_test_tr <- predict(model_tr, newdata=df_test)
+
+prep_tr <- prediction(pred_test_tr, df_test$TARGET)
+perf_tr <- performance(prep_tr, "tpr", "fpr")
+plot(perf_tr)
+auc_tr <- performance(prep_tr, "auc")
+auc_tr <- as.numeric(auc_tr@y.values)
+print(auc_tr) # score: 0.5884573
