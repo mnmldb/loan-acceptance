@@ -5,6 +5,7 @@
 library(dplyr)
 library(ggplot2)
 library(ggsci)
+library(makedummies)
 
 # Import training and test data
 df_train_raw <- read.csv("./processed_data/train_raw.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE)
@@ -332,4 +333,30 @@ for (i in 1:length(col_standard)) {
 # ===================================================================================================
 # 7. One Hot Encoding
 # ===================================================================================================
+# Combine df_train and df_test for one hot encoding
+num_train <- dim(df_train_st)[1] # 251321
+num_test <- dim(df_test_st)[1] # 56190
+df_cat_combined <- rbind(df_train_st[, colnames(df_train_st) %in% col_cat_use],
+                         df_test_st[, colnames(df_test_st) %in% col_cat_use])
 
+# One hot encoding
+for (i in 1:length(col_cat_use)) {
+  dat <- data.frame(x = factor(df_cat_combined[, col_cat_use[i]]))
+  colnames(dat) <- col_cat_use[i]
+  dummies <- makedummies(dat, basal_level = TRUE)
+  df_cat_combined <- cbind(df_cat_combined, dummies)
+}
+
+# Split the dataframe
+df_train_model <- cbind(df_train_st, df_cat_combined[1:num_train,])
+df_test_model <- cbind(df_test_st, df_cat_combined[(num_train + 1):(num_train + num_test),])
+
+# Final data frame
+df_train_model <- df_train_model[, -which(colnames(df_train_model) %in% col_cat_use)]
+df_test_model <- df_test_model[, -which(colnames(df_test_model) %in% col_cat_use)]
+
+# ===================================================================================================
+# 8. Export
+# ===================================================================================================
+write.csv(df_train_model, "./processed_data/train_model.csv", row.names=FALSE, na="")
+write.csv(df_test_model, "./processed_data/test_model.csv", row.names=FALSE, na="")
