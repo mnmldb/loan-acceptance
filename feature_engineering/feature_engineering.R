@@ -66,7 +66,7 @@ col_num_use_na <- c(
 
 # Create new data frames with the necessary features
 df_train <- df_train_raw %>%
-  dplyr::select(c(col_cat_use, col_int_use, col_num_use))
+  dplyr::select(c("TARGET", col_cat_use, col_int_use, col_num_use))
 
 df_test <- df_test_raw %>%
   dplyr::select(c(col_cat_use, col_int_use, col_num_use))
@@ -220,6 +220,9 @@ df_anom_max <- df_train_filled %>%
 # Combine
 df_anom <- data.frame(df_anom, df_anom_min, df_anom_max)
 
+# Findings
+# - DAYS_EMPLOYED has a large negative value of -365243
+
 # Create boxplot of DAYS_EMPLOYED
 df_train_filled %>%
   dplyr::filter(DAYS_EMPLOYED != -365243) %>%
@@ -232,7 +235,35 @@ df_train_filled %>%
   ggplot(aes(x = DAYS_BIRTH / 365)) +
   geom_boxplot()
 
+# Percentage of 1
+df_train_filled %>%
+  dplyr::filter(DAYS_EMPLOYED == -365243) %>%
+  dplyr::count(TARGET)
+2158 / (37799 + 2158) # 5.4%
 
+df_train_filled %>%
+  dplyr::filter(DAYS_EMPLOYED != -365243) %>%
+  dplyr::count(TARGET)
+18320 / (193044 + 18320) # 8.7%
+
+# Create a new column to flag the anomaly
+df_train_anom <- cbind(df_train_filled, ifelse(df_train_filled$DAYS_EMPLOYED == -365243, 1, 0))
+df_test_anom <- cbind(df_test_filled, ifelse(df_test_filled$DAYS_EMPLOYED == -365243, 1, 0))
+colnames(df_train_anom) = c(colnames(df_train_filled), "ANOMALY_DAYS_EMPLOYED")
+colnames(df_test_anom) = c(colnames(df_test_filled), "ANOMALY_DAYS_EMPLOYED")
+
+# Calculate the average ratio of DAYS_EMPLOYED and DAYS_BIRTH
+ratio <- df_train_anom %>%
+  dplyr::filter(DAYS_EMPLOYED != -365243) %>%
+  dplyr::select(DAYS_EMPLOYED / DAYS_BIRTH) %>%
+  sapply(mean) %>%
+  unlist()
+
+# Replace anomalies
+anom_index_train <- df_train_anom$DAYS_EMPLOYED == -365243
+anom_index_test <- df_test_anom$DAYS_EMPLOYED == -365243
+df_train_anom$DAYS_EMPLOYED[anom_index_train] <- df_train_anom$DAYS_BIRTH[anom_index_train] * v
+df_test_anom$DAYS_EMPLOYED[anom_index_test] <- df_test_anom$DAYS_BIRTH[anom_index_test] * v
 
 # ===================================================================================================
 # 5. Additional Features
