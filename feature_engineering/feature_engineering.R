@@ -70,7 +70,7 @@ df_train <- df_train_raw %>%
   dplyr::select(c("TARGET", col_cat_use, col_int_use, col_num_use))
 
 df_test <- df_test_raw %>%
-  dplyr::select(c(col_cat_use, col_int_use, col_num_use))
+  dplyr::select(c("TARGET", col_cat_use, col_int_use, col_num_use))
 
 # ===================================================================================================
 # 2. Converting Negative Values
