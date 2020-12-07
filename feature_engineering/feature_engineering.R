@@ -268,10 +268,66 @@ df_test_anom$DAYS_EMPLOYED[anom_index_test] <- df_test_anom$DAYS_BIRTH[anom_inde
 # ===================================================================================================
 # 5. Additional Features
 # ===================================================================================================
+# Polynomial features
+df_train_poly = data.frame(
+    SQUARE_EXT_SOURCE_1 = df_train_anom$EXT_SOURCE_1 ^ 2
+  , SQUARE_EXT_SOURCE_2 = df_train_anom$EXT_SOURCE_2 ^ 2
+  , SQUARE_EXT_SOURCE_3 = df_train_anom$EXT_SOURCE_3 ^ 2
+  , SQUARE_DAYS_BIRTH = df_train_anom$DAYS_BIRTH ^ 2
+)
+
+df_test_poly = data.frame(
+    SQUARE_EXT_SOURCE_1 = df_test_anom$EXT_SOURCE_1 ^ 2
+  , SQUARE_EXT_SOURCE_2 = df_test_anom$EXT_SOURCE_2 ^ 2
+  , SQUARE_EXT_SOURCE_3 = df_test_anom$EXT_SOURCE_3 ^ 2
+  , SQUARE_DAYS_BIRTH = df_test_anom$DAYS_BIRTH ^ 2
+)
+
+# Interaction terms
+df_train_inter = data.frame(
+    INTER_EXT_SOURCE_1_2 = df_train_anom$EXT_SOURCE_1 * df_train_anom$EXT_SOURCE_2
+  , INTER_EXT_SOURCE_2_3 = df_train_anom$EXT_SOURCE_2 * df_train_anom$EXT_SOURCE_3
+  , INTER_EXT_SOURCE_3_1 = df_train_anom$EXT_SOURCE_3 * df_train_anom$EXT_SOURCE_1
+  , INTER_DAYS_BIRTH_EXT_SOURCE_1 = df_train_anom$DAYS_BIRTH * df_train_anom$EXT_SOURCE_1
+  , INTER_DAYS_BIRTH_EXT_SOURCE_2 = df_train_anom$DAYS_BIRTH * df_train_anom$EXT_SOURCE_2
+  , INTER_DAYS_BIRTH_EXT_SOURCE_3 = df_train_anom$DAYS_BIRTH * df_train_anom$EXT_SOURCE_3
+)
+
+df_test_inter = data.frame(
+    INTER_EXT_SOURCE_1_2 = df_test_anom$EXT_SOURCE_1 * df_test_anom$EXT_SOURCE_2
+  , INTER_EXT_SOURCE_2_3 = df_test_anom$EXT_SOURCE_2 * df_test_anom$EXT_SOURCE_3
+  , INTER_EXT_SOURCE_3_1 = df_test_anom$EXT_SOURCE_3 * df_test_anom$EXT_SOURCE_1
+  , INTER_DAYS_BIRTH_EXT_SOURCE_1 = df_test_anom$DAYS_BIRTH * df_test_anom$EXT_SOURCE_1
+  , INTER_DAYS_BIRTH_EXT_SOURCE_2 = df_test_anom$DAYS_BIRTH * df_test_anom$EXT_SOURCE_2
+  , INTER_DAYS_BIRTH_EXT_SOURCE_3 = df_test_anom$DAYS_BIRTH * df_test_anom$EXT_SOURCE_3
+)
+
+# Combine
+df_train_af = cbind(df_train_anom, df_train_poly, df_train_inter)
+df_test_af = cbind(df_test_anom, df_test_poly, df_test_inter)
 
 # ===================================================================================================
 # 6. Standardization
 # ===================================================================================================
+# Create new data frame
+df_train_st <- df_train_af
+df_test_st <- df_test_af
+
+# Set column names to standardize
+col_standard <- c(col_int_use, col_num_use, colnames(df_train_poly), colnames(df_train_inter))
+
+# Calculate mean and standard deviation
+standard_mean <- apply(df_train_st[, col_standard], 2, mean)
+standard_std <- apply(df_train_st[, col_standard], 2, sd)
+
+# Standardization
+for (i in 1:length(col_standard)) {
+  col <- col_standard[i]
+  df_train_st[, col] <- sapply(df_train_st[, col], function(x, mean=standard_mean[i], std=standard_std[i]) {
+    return((x - mean) / std)})
+  df_test_st[, col] <- sapply(df_test_st[, col], function(x, mean=standard_mean[i], std=standard_std[i]) {
+    return((x - mean) / std)})
+}
 
 # ===================================================================================================
 # 7. One Hot Encoding
