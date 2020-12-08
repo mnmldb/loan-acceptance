@@ -109,7 +109,9 @@ plot_hist <- function(f) {
     geom_vline(xintercept = median(df_train[, f], na.rm = TRUE), linetype = "dashed", alpha = 0.5, color = "blue") +
     geom_vline(xintercept = as.numeric(calc_mode(df_train[, f])), linetype = "dashed", alpha = 0.5, color = "green") +
     labs(x="Value", y="Count")  +
-    theme(axis.text=element_text(size=9), axis.title=element_text(size=11))
+    theme(axis.text=element_text(size=9), axis.title=element_text(size=11)) +
+    ggtitle(f) +
+    theme(plot.title = element_text(hjust = 0.5))
 }
 
 # Create the function to update df_fill_value
