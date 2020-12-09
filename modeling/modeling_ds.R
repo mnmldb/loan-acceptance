@@ -22,22 +22,27 @@ df_test_all <- read.csv("./processed_data/test_model.csv", header=T, sep=",", na
 # Columns used for modeling
 col_use <- c(
     "TARGET"
-  , "DAYS_BIRTH"
-  , "DAYS_EMPLOYED"
-  , "DAYS_ID_PUBLISH"
-  , "AMT_INCOME_TOTAL"
-  , "AMT_CREDIT"
-  , "AMT_ANNUITY"
-  , "AMT_GOODS_PRICE"
-  , "DAYS_REGISTRATION"
-  , "EXT_SOURCE_1"
-  , "EXT_SOURCE_2"
-  , "EXT_SOURCE_3"
+  , "DAYS_BIRTH" # integer
+  , "DAYS_EMPLOYED" # integer
+  , "DAYS_ID_PUBLISH" # integer
+  , "DAYS_LAST_PHONE_CHANGE" #integer
+  , "DAYS_REGISTRATION" # numeric
+  , "AMT_INCOME_TOTAL" # numeric
+  , "AMT_CREDIT" # numeric
+  , "AMT_ANNUITY" # numeric
+  , "AMT_GOODS_PRICE" # numeric
+  , "EXT_SOURCE_1" # numeric
+  , "EXT_SOURCE_2" # numeric
+  , "EXT_SOURCE_3" # numeric
+  , "CODE_GENDER_F" # character (categorical)
   , "ANOMALY_DAYS_EMPLOYED"
+  , "SQUARE_DAYS_BIRTH"
+  , "SQUARE_EXT_SOURCE_1"
+  , "SQUARE_EXT_SOURCE_2"
+  , "SQUARE_EXT_SOURCE_3"
   , "INTER_EXT_SOURCE_1_2"
   , "INTER_EXT_SOURCE_2_3"
   , "INTER_EXT_SOURCE_3_1"
-  , "CODE_GENDER_F"
   # , "CODE_GENDER_M" # need to remove due to the collinearity
 )
 
@@ -77,8 +82,8 @@ calc_auc <- function(pred, target) {
 model_lr <- glm(TARGET~., data=df_train, family=binomial)
 pred_train_lr <- predict(model_lr, type="response")
 pred_test_lr <- predict(model_lr, newdata=df_test, type="response")
-calc_auc(pred_train_lr, df_train$TARGET) # score: 0.7315367
-calc_auc(pred_test_lr, df_test$TARGET) # score: 0.6777203
+calc_auc(pred_train_lr, df_train$TARGET) # score: 0.7329133
+calc_auc(pred_test_lr, df_test$TARGET) # score: 0.6425435
 
 # Test: 4 variables
 model_lr_4 <- glm(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
@@ -167,7 +172,7 @@ y.test <- y[test]
 set.seed (1)
 cv.out.ridge <- cv.glmnet(x[train ,],y[train],alpha=0)
 plot(cv.out.ridge)
-bestlam_ridge <- cv.out.ridge$lambda.min # 0.7997455
+bestlam_ridge <- cv.out.ridge$lambda.min # 0.8777197
 
 # Train the best ridge model 
 model_lr_ridge <- glmnet(x,y,alpha=0, lambda = grid)
@@ -175,8 +180,8 @@ predict(model_lr_ridge,type="coefficient", s=bestlam_ridge) # coefficient estima
 df_test_ridge <- df_test[, -(colnames(df_test) %in% col_use)]
 pred_train_lr_ridge <- predict(model_lr_ridge,newx=x, s=bestlam_ridge, type = 'response')
 pred_test_lr_ridge <- predict(model_lr_ridge,newx=as.matrix(df_test_ridge), s=bestlam_ridge, type = 'response')
-calc_auc(pred_train_lr_ridge, df_train$TARGET) # score: 0.7233309
-calc_auc(pred_test_lr_ridge, df_test$TARGET) # score: 0.6773436
+calc_auc(pred_train_lr_ridge, df_train$TARGET) # score: 0.723859
+calc_auc(pred_test_lr_ridge, df_test$TARGET) # score: 0.6777627
 
 #--- Lasso ---#
 lasso.mod <- glmnet(x[train ,],y[train],alpha=1,lambda=grid)
@@ -194,63 +199,70 @@ predict(model_lr_lasso,type="coefficient", s=bestlam_lasso) # coefficient estima
 df_test_lasso <- df_test[, -(colnames(df_test) %in% col_use)]
 pred_train_lr_lasso <- predict(model_lr_lasso,newx=x, s=bestlam_lasso, type = 'response')
 pred_test_lr_lasso <- predict(model_lr_lasso,newx=as.matrix(df_test_lasso), s=bestlam_lasso, type = 'response')
-calc_auc(pred_train_lr_lasso, df_train$TARGET) # score: 0.7223107
-calc_auc(pred_test_lr_lasso, df_test$TARGET) # score: 0.6781454
+calc_auc(pred_train_lr_lasso, df_train$TARGET) # score: 0.722326
+calc_auc(pred_test_lr_lasso, df_test$TARGET) # score: 0.6781371
 
 # ===================================================================================================
 # 4. Linear Discriminant Analysis
 # ===================================================================================================
+# Test: all variables
 model_lda <- lda(TARGET~., data=df_train)
 model_lda
+pred_train_lda <- predict(model_lda, newdata=df_train)
 pred_test_lda <- predict(model_lda, newdata=df_test)
 
 # <reference> https://stackoverflow.com/questions/41533811/roc-curve-in-linear-discriminant-analysis-with-r
+calc_auc(pred_train_lda$posterior[,2], df_train$TARGET) # score: 0.7327251
+calc_auc(pred_test_lda$posterior[,2], df_test$TARGET) # score: 0.6536142
 plot_auc(pred_test_lda$posterior[,2], df_test$TARGET)
-calc_auc(pred_test_lda$posterior[,2], df_test$TARGET) # score: 0.6780641
 
+# Test: 4 variables
 model_lda_s <- lda(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
 model_lda_s
+pred_train_lda_s <- predict(model_lda_s, newdata=df_train)
 pred_test_lda_s <- predict(model_lda_s, newdata=df_test)
 
 # <reference> https://stackoverflow.com/questions/41533811/roc-curve-in-linear-discriminant-analysis-with-r
-plot_auc(pred_test_lda_s$posterior[,2], df_test$TARGET)
+calc_auc(pred_train_lda_s$posterior[,2], df_train$TARGET) # score: 0.7184173
 calc_auc(pred_test_lda_s$posterior[,2], df_test$TARGET) # score: 0.7102984
+plot_auc(pred_test_lda_s$posterior[,2], df_test$TARGET)
 
 # ===================================================================================================
 # 5. K-Nearest Neighbors
 # ===================================================================================================
+# Test: all variables
 train.X <- df_train[, -which(colnames(df_train) == "TARGET")]
 test.X <- df_test[, -which(colnames(df_test) == "TARGET")]
 train.Y <- df_train$TARGET
 
+pred_train_knn <- knn(train.X, train.X, train.Y, k=10, prob=TRUE)
 pred_test_knn <- knn(train.X, test.X, train.Y, k=10, prob=TRUE)
 
 # https://stackoverflow.com/questions/40783331/rocr-error-format-of-predictions-is-invalid
+calc_auc(as.numeric(pred_train_knn), df_train$TARGET) # score: 0.7093954
+calc_auc(as.numeric(pred_test_knn), df_test$TARGET) # score: 0.595373
 plot_auc(as.numeric(pred_test_knn), df_test$TARGET)
-calc_auc(as.numeric(pred_test_knn), df_test$TARGET) # score: 0.5924022
 
 # ===================================================================================================
 # 6. Random Forest
 # ===================================================================================================
+# Test: all variables
 set.seed(1)
-
 model_rf <- randomForest(TARGET~., data=df_train)
+pred_train_rf <- predict(model_rf, newdata=df_train)
 pred_test_rf <- predict(model_rf, newdata=df_test)
 importance(model_rf)
 
+calc_auc(pred_train_rf, df_train$TARGET) # score: 1
+calc_auc(pred_test_rf, df_test$TARGET) # score: 0.6528119
 plot_auc(pred_test_rf, df_test$TARGET)
-calc_auc(pred_test_rf, df_test$TARGET) # score: 0.6522237
 
-model_rf_all <- randomForest(TARGET~., data=df_train_all)
-pred_test_rf_all <- predict(model_rf_all, newdata=df_test_all)
-importance(model_rf_all)
-
-plot_auc(pred_test_rf_all, df_test$TARGET)
-calc_auc(pred_test_rf_all, df_test$TARGET) # score: 0.6095454
-
+# Test: 4 variables
 model_rf_s <- randomForest(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
+pred_train_rf_s <- predict(model_rf_s, newdata=df_train)
 pred_test_rf_s <- predict(model_rf_s, newdata=df_test)
 importance(model_rf_s)
 
-plot_auc(pred_test_rf_s, df_test$TARGET)
+calc_auc(pred_train_rf_s, df_train$TARGET) # score: 0.9871939
 calc_auc(pred_test_rf_s, df_test$TARGET) # score: 0.6588263
+plot_auc(pred_test_rf_s, df_test$TARGET)
