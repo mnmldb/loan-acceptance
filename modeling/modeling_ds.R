@@ -202,6 +202,9 @@ pred_test_lr_lasso <- predict(model_lr_lasso,newx=as.matrix(df_test_lasso), s=be
 calc_auc(pred_train_lr_lasso, df_train$TARGET) # score: 0.722326
 calc_auc(pred_test_lr_lasso, df_test$TARGET) # score: 0.6781371
 
+#--- The Best Model ---#
+summary(model_lr_3)
+
 # ===================================================================================================
 # 4. Linear Discriminant Analysis
 # ===================================================================================================

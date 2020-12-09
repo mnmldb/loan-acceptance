@@ -223,14 +223,13 @@ df_train %>%
   ggplot(aes(x=EXT_SOURCE_1, fill=as.factor(TARGET))) +
   geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
   scale_fill_npg() +
-  scale_color_npg()
-
 # Distribution of EXT_SOURCE_2 by target
 df_train %>%
   ggplot(aes(x=EXT_SOURCE_2, fill=as.factor(TARGET))) +
   geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
   scale_fill_npg() +
-  scale_color_npg()
+  scale_color_npg() +
+  theme(legend.position = 'none') # legends removed for the layout in the project paper
 
 # Distribution of EXT_SOURCE_3 by target
 df_train %>%
@@ -244,7 +243,8 @@ df_train %>%
   ggplot(aes(x=DAYS_BIRTH, fill=as.factor(TARGET))) +
   geom_density(aes(color=as.factor(TARGET), alpha=0.2)) +
   scale_fill_npg() +
-  scale_color_npg()
+  scale_color_npg() +
+  theme(legend.position = 'none') # legends removed for the layout in the project paper
 
 # Distribution of DAYS_EMPLOYED by target: anomaly detected
 df_train %>%
