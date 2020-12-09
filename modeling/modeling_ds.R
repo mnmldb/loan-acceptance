@@ -11,6 +11,8 @@ library(MASS)
 library(class)
 library(randomForest)
 library(tree)
+library(leaps)
+library(car)
 
 # Import training and test data
 df_train_all <- read.csv("./processed_data/train_model_ds.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE)
@@ -35,14 +37,22 @@ col_use <- c(
   , "INTER_EXT_SOURCE_2_3"
   , "INTER_EXT_SOURCE_3_1"
   , "CODE_GENDER_F"
-  , "CODE_GENDER_M"
+  # , "CODE_GENDER_M" # need to remove due to the collinearity
 )
 
+# How to find collinearity
+# model_col <- glm(TARGET~., data=df_train, family=binomial)
+# vif(model_col)
+# Error in vif.default(model_col) : 
+#  there are aliased coefficients in the model
+# alias(model_col) # Collinearity between CODE_GENDER_F and CODE_GENDER_M
+
+# Create new data frames used for modeling
 df_train <- df_train_all[, colnames(df_train_all) %in% col_use]
 df_test <- df_test_all[, colnames(df_test_all) %in% col_use]
 
-# ===================================================================================================
-# 1. Area under the ROC Curve
+# ==================================================================================================
+# 2. Area under the ROC Curve
 # ===================================================================================================
 # Function to plot the ROC curve
 plot_auc <- function(pred, target) {
@@ -62,21 +72,65 @@ calc_auc <- function(pred, target) {
 # ===================================================================================================
 # 3. Logistic Regression
 # ===================================================================================================
+# Test: all variables
 model_lr <- glm(TARGET~., data=df_train, family=binomial)
-summary(model_lr)
 pred_train_lr <- predict(model_lr, type="response")
 pred_test_lr <- predict(model_lr, newdata=df_test, type="response")
-
-plot_auc(pred_test_lr, df_test$TARGET)
 calc_auc(pred_test_lr, df_test$TARGET) # score: 0.6777203
 
-model_lr_s <- glm(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
-summary(model_lr_s)
-pred_train_lr_s <- predict(model_lr_s, type="response")
-pred_test_lr_s <- predict(model_lr_s, newdata=df_test, type="response")
+# Test: 4 variables
+model_lr_4 <- glm(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
+pred_train_lr_4 <- predict(model_lr_4, type="response")
+pred_test_lr_4 <- predict(model_lr_4, newdata=df_test, type="response")
+calc_auc(pred_test_lr_4, df_test$TARGET) # score: 0.7107454
 
-plot_auc(pred_test_lr_s, df_test$TARGET)
-calc_auc(pred_test_lr_s, df_test$TARGET) # score: 0.7107454
+# Test: 3 variables
+model_lr_3 <- glm(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
+pred_train_lr_3 <- predict(model_lr_3, type="response")
+pred_test_lr_3 <- predict(model_lr_3, newdata=df_test, type="response")
+calc_auc(pred_test_lr_3, df_test$TARGET) # score: 0.7146918
+
+#--- Best subset selection with cross validation ---#
+num_var <- dim(df_train)[2] - 1 # TARGET excluded
+
+# Prepare folds and matrix to input RSS
+k <- 10 # number of folds
+set.seed(1)
+folds <- sample(1:k, nrow(df_train), replace=TRUE)
+cv_errors <- matrix(NA, k, num_var, dimnames=list(NULL, paste(1:num_var)))
+
+# Create function for prediction with regsubsets
+predict.regsubsets <- function (object ,newdata ,id ,...){
+  form=as.formula(object$call [[2]])
+  mat=model.matrix(form,newdata)
+  coefi=coef(object ,id=id)
+  xvars=names(coefi)
+  mat[,xvars]%*%coefi
+  }
+
+# Loop folds and calculate each RSS
+for (j in 1:k) {
+  best_fit <- regsubsets(TARGET~., data=df_train[folds != j, ], nvmax=num_var)
+  for (i in 1:num_var) {
+    pred <- predict(best_fit, df_train[folds == j, ], id=i)
+    cv_errors[j, i] <- mean((df_train$TARGET[folds == j] - pred) ^ 2)
+  }
+}
+
+# Confirm the best number of features
+mean_cv_errors <- apply(cv_errors ,2,mean)
+par(mfrow=c(1,1))
+plot(mean_cv_errors ,type='b')
+best_var <- which.min(mean_cv_errors) # 7
+
+# Create the best model
+reg_best <- regsubsets(TARGET~., data=df_train, nvmax=num_var)
+coef(reg_best, best_var) # AMT_CREDIT, AMT_GOODS_PRICE, DAYS_EMPLOYED, EXT_SOURCE_1, EXT_SOURCE_3, INTER_EXT_SOURCE_1_2, CODE_GENDER_F
+model_lr_best <- glm(TARGET~AMT_CREDIT+AMT_GOODS_PRICE+DAYS_EMPLOYED+EXT_SOURCE_1+EXT_SOURCE_3+INTER_EXT_SOURCE_1_2+CODE_GENDER_F, data=df_train, family=binomial)
+pred_train_lr_best <- predict(model_lr_best, type="response")
+pred_test_lr_best <- predict(model_lr_best, newdata=df_test, type="response")
+calc_auc(pred_test_lr_best, df_test$TARGET) # score: 0.681197
+plot_auc(pred_test_lr_best, df_test$TARGET)
 
 # ===================================================================================================
 # 4. Linear Discriminant Analysis

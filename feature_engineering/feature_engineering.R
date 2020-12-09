@@ -6,6 +6,7 @@ library(dplyr)
 library(ggplot2)
 library(ggsci)
 library(makedummies)
+library(car)
 
 # Import training and test data
 df_train_raw <- read.csv("./processed_data/train_raw.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE)
