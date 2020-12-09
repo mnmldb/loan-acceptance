@@ -13,6 +13,7 @@ library(randomForest)
 library(tree)
 library(leaps)
 library(car)
+library(glmnet)
 
 # Import training and test data
 df_train_all <- read.csv("./processed_data/train_model_ds.csv", header=T, sep=",", na.strings=c('', 'NULL', '""'), stringsAsFactors=FALSE)
@@ -76,19 +77,36 @@ calc_auc <- function(pred, target) {
 model_lr <- glm(TARGET~., data=df_train, family=binomial)
 pred_train_lr <- predict(model_lr, type="response")
 pred_test_lr <- predict(model_lr, newdata=df_test, type="response")
+calc_auc(pred_train_lr, df_train$TARGET) # score: 0.7315367
 calc_auc(pred_test_lr, df_test$TARGET) # score: 0.6777203
 
 # Test: 4 variables
 model_lr_4 <- glm(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
 pred_train_lr_4 <- predict(model_lr_4, type="response")
 pred_test_lr_4 <- predict(model_lr_4, newdata=df_test, type="response")
+calc_auc(pred_train_lr_4, df_train$TARGET) # score: 0.7184532
 calc_auc(pred_test_lr_4, df_test$TARGET) # score: 0.7107454
 
 # Test: 3 variables
 model_lr_3 <- glm(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
 pred_train_lr_3 <- predict(model_lr_3, type="response")
 pred_test_lr_3 <- predict(model_lr_3, newdata=df_test, type="response")
+calc_auc(pred_train_lr_3, df_train$TARGET) # score: 0.7177558
 calc_auc(pred_test_lr_3, df_test$TARGET) # score: 0.7146918
+
+# Test: 2 variables
+model_lr_2 <- glm(TARGET~EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
+pred_train_lr_2 <- predict(model_lr_2, type="response")
+pred_test_lr_2 <- predict(model_lr_2, newdata=df_test, type="response")
+calc_auc(pred_train_lr_2, df_train$TARGET) # score: 0.7061576
+calc_auc(pred_test_lr_2, df_test$TARGET) # score: 0.7039289
+
+# Test: 1 variables
+model_lr_1 <- glm(TARGET~EXT_SOURCE_2, data=df_train, family=binomial)
+pred_train_lr_1 <- predict(model_lr_1, type="response")
+pred_test_lr_1 <- predict(model_lr_1, newdata=df_test, type="response")
+calc_auc(pred_train_lr_1, df_train$TARGET) # score: 0.6568346
+calc_auc(pred_test_lr_1, df_test$TARGET) # score: 0.6463267
 
 #--- Best subset selection with cross validation ---#
 num_var <- dim(df_train)[2] - 1 # TARGET excluded
@@ -129,8 +147,55 @@ coef(reg_best, best_var) # AMT_CREDIT, AMT_GOODS_PRICE, DAYS_EMPLOYED, EXT_SOURC
 model_lr_best <- glm(TARGET~AMT_CREDIT+AMT_GOODS_PRICE+DAYS_EMPLOYED+EXT_SOURCE_1+EXT_SOURCE_3+INTER_EXT_SOURCE_1_2+CODE_GENDER_F, data=df_train, family=binomial)
 pred_train_lr_best <- predict(model_lr_best, type="response")
 pred_test_lr_best <- predict(model_lr_best, newdata=df_test, type="response")
+calc_auc(pred_train_lr_best, df_train$TARGET) # score: 0.7281696
 calc_auc(pred_test_lr_best, df_test$TARGET) # score: 0.681197
 plot_auc(pred_test_lr_best, df_test$TARGET)
+
+#--- Ridge ---#
+x <- model.matrix(TARGET~., df_train)[,-1]
+y <- df_train$TARGET
+grid <- 10 ^ seq(10, -2, length=100)
+ridge.mod=glmnet(x,y,alpha=0,lambda=grid)
+
+# Set index for validation
+set.seed (1)
+train <- sample(1:nrow(x), nrow(x)/2)
+test <- (-train)
+y.test <- y[test]
+
+# Validation to get the best lambda
+set.seed (1)
+cv.out.ridge <- cv.glmnet(x[train ,],y[train],alpha=0)
+plot(cv.out.ridge)
+bestlam_ridge <- cv.out.ridge$lambda.min # 0.7997455
+
+# Train the best ridge model 
+model_lr_ridge <- glmnet(x,y,alpha=0, lambda = grid)
+predict(model_lr_ridge,type="coefficient", s=bestlam_ridge) # coefficient estimates
+df_test_ridge <- df_test[, -(colnames(df_test) %in% col_use)]
+pred_train_lr_ridge <- predict(model_lr_ridge,newx=x, s=bestlam_ridge, type = 'response')
+pred_test_lr_ridge <- predict(model_lr_ridge,newx=as.matrix(df_test_ridge), s=bestlam_ridge, type = 'response')
+calc_auc(pred_train_lr_ridge, df_train$TARGET) # score: 0.7233309
+calc_auc(pred_test_lr_ridge, df_test$TARGET) # score: 0.6773436
+
+#--- Lasso ---#
+lasso.mod <- glmnet(x[train ,],y[train],alpha=1,lambda=grid)
+plot(lasso.mod)
+
+# Validation to get the best lambda
+set.seed (1)
+cv.out.lasso <- cv.glmnet(x[train ,],y[train],alpha=1)
+plot(cv.out.lasso)
+bestlam_lasso <- cv.out.lasso$lambda.min # 0.01722999
+
+# Train the best lasso model
+model_lr_lasso <- glmnet(x,y,alpha=1, lambda = grid)
+predict(model_lr_lasso,type="coefficient", s=bestlam_lasso) # coefficient estimates
+df_test_lasso <- df_test[, -(colnames(df_test) %in% col_use)]
+pred_train_lr_lasso <- predict(model_lr_lasso,newx=x, s=bestlam_lasso, type = 'response')
+pred_test_lr_lasso <- predict(model_lr_lasso,newx=as.matrix(df_test_lasso), s=bestlam_lasso, type = 'response')
+calc_auc(pred_train_lr_lasso, df_train$TARGET) # score: 0.7223107
+calc_auc(pred_test_lr_lasso, df_test$TARGET) # score: 0.6781454
 
 # ===================================================================================================
 # 4. Linear Discriminant Analysis
