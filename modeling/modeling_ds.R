@@ -231,7 +231,7 @@ calc_auc(pred_train_lda_4$posterior[,2], df_train$TARGET) # score: 0.7184173
 calc_auc(pred_test_lda_4$posterior[,2], df_test$TARGET) # score: 0.7102984
 plot_auc(pred_test_lda_4$posterior[,2], df_test$TARGET)
 
-# Test: 4 variables
+# Test: 3 variables
 model_lda_3 <- lda(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
 model_lda_3
 pred_train_lda_3 <- predict(model_lda_3, newdata=df_train)
@@ -256,15 +256,34 @@ train.Y <- df_train$TARGET
 
 # https://stackoverflow.com/questions/40783331/rocr-error-format-of-predictions-is-invalid
 
+# Reuse the 10-fold cross-validation framework with Logistic Regression
+# Prepare folds and matrix to input RSS
+# k <- 10 # number of folds
+set.seed(1)
+# folds <- sample(1:k, nrow(df_train), replace=TRUE)
+grid_neighbors <- c(1, 5, 10, 50, 100, 400) # number of ties
+cv_errors_knn <- matrix(NA, k, length(grid_neighbors), dimnames=list(NULL, paste(1:length(grid_neighbors))))
+
+# Loop folds and calculate each RSS
+for (j in 1:k) {
+  for (i in 1:length(grid_neighbors)) {
+    pred_cv_knn <- knn(train.X[folds != j, ], train.X[folds == j, ], train.Y[folds != j], k=i, prob=TRUE)
+    cv_errors_knn[j, i] <- mean((df_train$TARGET[folds == j] - (as.numeric(pred_cv_knn) - 1)) ^ 2) # need to extract 1 after as.numeric()
+  }
+}  
+
+mean_cv_errors_knn
+# Confirm the best number of features
+mean_cv_errors_knn <- apply(cv_errors_knn ,2,mean)
+par(mfrow=c(1,1))
+plot(mean_cv_errors_knn ,type='b')
+best_neighbors <- grid_neighbors[which.min(mean_cv_errors_knn)] # 100
+
+# Calculate Scores
 pred_train_knn_1 <- knn(train.X, train.X, train.Y, k=1, prob=TRUE)
 pred_test_knn_1 <- knn(train.X, test.X, train.Y, k=1, prob=TRUE)
 calc_auc(as.numeric(pred_train_knn_1), df_train$TARGET) # score: 1
 calc_auc(as.numeric(pred_test_knn_1), df_test$TARGET) # score: 0.5564606
-
-pred_train_knn_3 <- knn(train.X, train.X, train.Y, k=3, prob=TRUE)
-pred_test_knn_3 <- knn(train.X, test.X, train.Y, k=3, prob=TRUE)
-calc_auc(as.numeric(pred_train_knn_3), df_train$TARGET) # score: 0.7975632
-calc_auc(as.numeric(pred_test_knn_3), df_test$TARGET) # score: 0.578347
 
 pred_train_knn_5 <- knn(train.X, train.X, train.Y, k=5, prob=TRUE)
 pred_test_knn_5 <- knn(train.X, test.X, train.Y, k=5, prob=TRUE)
@@ -276,11 +295,6 @@ pred_test_knn_10 <- knn(train.X, test.X, train.Y, k=10, prob=TRUE)
 calc_auc(as.numeric(pred_train_knn_10), df_train$TARGET) # score: 0.709371
 calc_auc(as.numeric(pred_test_knn_10), df_test$TARGET) # score: 0.5943738
 
-pred_train_knn_20 <- knn(train.X, train.X, train.Y, k=20, prob=TRUE)
-pred_test_knn_20 <- knn(train.X, test.X, train.Y, k=20, prob=TRUE)
-calc_auc(as.numeric(pred_train_knn_20), df_train$TARGET) # score: 0.6916447
-calc_auc(as.numeric(pred_test_knn_20), df_test$TARGET) # score: 0.6022083
-
 pred_train_knn_50 <- knn(train.X, train.X, train.Y, k=50, prob=TRUE)
 pred_test_knn_50 <- knn(train.X, test.X, train.Y, k=50, prob=TRUE)
 calc_auc(as.numeric(pred_train_knn_50), df_train$TARGET) # score: 0.6807305
@@ -290,16 +304,6 @@ pred_train_knn_100 <- knn(train.X, train.X, train.Y, k=100, prob=TRUE)
 pred_test_knn_100 <- knn(train.X, test.X, train.Y, k=100, prob=TRUE)
 calc_auc(as.numeric(pred_train_knn_100), df_train$TARGET) # score: 0.6756031
 calc_auc(as.numeric(pred_test_knn_100), df_test$TARGET) # score: 0.6217609
-
-pred_train_knn_200 <- knn(train.X, train.X, train.Y, k=200, prob=TRUE)
-pred_test_knn_200 <- knn(train.X, test.X, train.Y, k=200, prob=TRUE)
-calc_auc(as.numeric(pred_train_knn_200), df_train$TARGET) # score: 0.674016
-calc_auc(as.numeric(pred_test_knn_200), df_test$TARGET) # score: 0.6304782
-
-pred_train_knn_300 <- knn(train.X, train.X, train.Y, k=300, prob=TRUE)
-pred_test_knn_300 <- knn(train.X, test.X, train.Y, k=300, prob=TRUE)
-calc_auc(as.numeric(pred_train_knn_300), df_train$TARGET) # score: 0.6721115
-calc_auc(as.numeric(pred_test_knn_300), df_test$TARGET) # score: 0.6305978
 
 pred_train_knn_400 <- knn(train.X, train.X, train.Y, k=400, prob=TRUE)
 pred_test_knn_400 <- knn(train.X, test.X, train.Y, k=400, prob=TRUE)
