@@ -98,6 +98,7 @@ pred_train_lr_3 <- predict(model_lr_3, type="response")
 pred_test_lr_3 <- predict(model_lr_3, newdata=df_test, type="response")
 calc_auc(pred_train_lr_3, df_train$TARGET) # score: 0.7177558
 calc_auc(pred_test_lr_3, df_test$TARGET) # score: 0.7146918
+plot_auc(pred_test_lr_3, df_test$TARGET) # plot for the paper
 
 # Test: 2 variables
 model_lr_2 <- glm(TARGET~EXT_SOURCE_2+EXT_SOURCE_3, data=df_train, family=binomial)
@@ -220,15 +221,30 @@ calc_auc(pred_test_lda$posterior[,2], df_test$TARGET) # score: 0.6536142
 plot_auc(pred_test_lda$posterior[,2], df_test$TARGET)
 
 # Test: 4 variables
-model_lda_s <- lda(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
-model_lda_s
-pred_train_lda_s <- predict(model_lda_s, newdata=df_train)
-pred_test_lda_s <- predict(model_lda_s, newdata=df_test)
+model_lda_4 <- lda(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
+model_lda_4
+pred_train_lda_4 <- predict(model_lda_4, newdata=df_train)
+pred_test_lda_4 <- predict(model_lda_4, newdata=df_test)
 
 # <reference> https://stackoverflow.com/questions/41533811/roc-curve-in-linear-discriminant-analysis-with-r
-calc_auc(pred_train_lda_s$posterior[,2], df_train$TARGET) # score: 0.7184173
-calc_auc(pred_test_lda_s$posterior[,2], df_test$TARGET) # score: 0.7102984
-plot_auc(pred_test_lda_s$posterior[,2], df_test$TARGET)
+calc_auc(pred_train_lda_4$posterior[,2], df_train$TARGET) # score: 0.7184173
+calc_auc(pred_test_lda_4$posterior[,2], df_test$TARGET) # score: 0.7102984
+plot_auc(pred_test_lda_4$posterior[,2], df_test$TARGET)
+
+# Test: 4 variables
+model_lda_3 <- lda(TARGET~EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
+model_lda_3
+pred_train_lda_3 <- predict(model_lda_3, newdata=df_train)
+pred_test_lda_3 <- predict(model_lda_3, newdata=df_test)
+
+# <reference> https://stackoverflow.com/questions/31533811/roc-curve-in-linear-discriminant-analysis-with-r
+calc_auc(pred_train_lda_3$posterior[,2], df_train$TARGET) # score: 0.7177225
+calc_auc(pred_test_lda_3$posterior[,2], df_test$TARGET) # score: 0.7145962
+plot_auc(pred_test_lda_3$posterior[,2], df_test$TARGET) # plot for the paper
+
+# Best model correlation with Logistic Regression
+cor(pred_test_lr_3, pred_test_lda_3$posterior[, 2]) # 0.9999222
+plot(pred_test_lr_3, pred_test_lda_3$posterior[, 2], xlab="Logistic Regression", ylab="LDA")
 
 # ===================================================================================================
 # 5. K-Nearest Neighbors
@@ -238,13 +254,64 @@ train.X <- df_train[, -which(colnames(df_train) == "TARGET")]
 test.X <- df_test[, -which(colnames(df_test) == "TARGET")]
 train.Y <- df_train$TARGET
 
-pred_train_knn <- knn(train.X, train.X, train.Y, k=10, prob=TRUE)
-pred_test_knn <- knn(train.X, test.X, train.Y, k=10, prob=TRUE)
-
 # https://stackoverflow.com/questions/40783331/rocr-error-format-of-predictions-is-invalid
-calc_auc(as.numeric(pred_train_knn), df_train$TARGET) # score: 0.7093954
-calc_auc(as.numeric(pred_test_knn), df_test$TARGET) # score: 0.595373
-plot_auc(as.numeric(pred_test_knn), df_test$TARGET)
+
+pred_train_knn_1 <- knn(train.X, train.X, train.Y, k=1, prob=TRUE)
+pred_test_knn_1 <- knn(train.X, test.X, train.Y, k=1, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_1), df_train$TARGET) # score: 1
+calc_auc(as.numeric(pred_test_knn_1), df_test$TARGET) # score: 0.5564606
+
+pred_train_knn_3 <- knn(train.X, train.X, train.Y, k=3, prob=TRUE)
+pred_test_knn_3 <- knn(train.X, test.X, train.Y, k=3, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_3), df_train$TARGET) # score: 0.7975632
+calc_auc(as.numeric(pred_test_knn_3), df_test$TARGET) # score: 0.578347
+
+pred_train_knn_5 <- knn(train.X, train.X, train.Y, k=5, prob=TRUE)
+pred_test_knn_5 <- knn(train.X, test.X, train.Y, k=5, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_5), df_train$TARGET) # score: 0.7501465
+calc_auc(as.numeric(pred_test_knn_5), df_test$TARGET) # score: 0.5856481
+
+pred_train_knn_10 <- knn(train.X, train.X, train.Y, k=10, prob=TRUE)
+pred_test_knn_10 <- knn(train.X, test.X, train.Y, k=10, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_10), df_train$TARGET) # score: 0.709371
+calc_auc(as.numeric(pred_test_knn_10), df_test$TARGET) # score: 0.5943738
+
+pred_train_knn_20 <- knn(train.X, train.X, train.Y, k=20, prob=TRUE)
+pred_test_knn_20 <- knn(train.X, test.X, train.Y, k=20, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_20), df_train$TARGET) # score: 0.6916447
+calc_auc(as.numeric(pred_test_knn_20), df_test$TARGET) # score: 0.6022083
+
+pred_train_knn_50 <- knn(train.X, train.X, train.Y, k=50, prob=TRUE)
+pred_test_knn_50 <- knn(train.X, test.X, train.Y, k=50, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_50), df_train$TARGET) # score: 0.6807305
+calc_auc(as.numeric(pred_test_knn_50), df_test$TARGET) # score: 0.6129506
+
+pred_train_knn_100 <- knn(train.X, train.X, train.Y, k=100, prob=TRUE)
+pred_test_knn_100 <- knn(train.X, test.X, train.Y, k=100, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_100), df_train$TARGET) # score: 0.6756031
+calc_auc(as.numeric(pred_test_knn_100), df_test$TARGET) # score: 0.6217609
+
+pred_train_knn_200 <- knn(train.X, train.X, train.Y, k=200, prob=TRUE)
+pred_test_knn_200 <- knn(train.X, test.X, train.Y, k=200, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_200), df_train$TARGET) # score: 0.674016
+calc_auc(as.numeric(pred_test_knn_200), df_test$TARGET) # score: 0.6304782
+
+pred_train_knn_300 <- knn(train.X, train.X, train.Y, k=300, prob=TRUE)
+pred_test_knn_300 <- knn(train.X, test.X, train.Y, k=300, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_300), df_train$TARGET) # score: 0.6721115
+calc_auc(as.numeric(pred_test_knn_300), df_test$TARGET) # score: 0.6305978
+
+pred_train_knn_400 <- knn(train.X, train.X, train.Y, k=400, prob=TRUE)
+pred_test_knn_400 <- knn(train.X, test.X, train.Y, k=400, prob=TRUE)
+calc_auc(as.numeric(pred_train_knn_400), df_train$TARGET) # score: 0.671257
+calc_auc(as.numeric(pred_test_knn_400), df_test$TARGET) # score: 0.6341206
+
+# knn with 500 ties end up with the error
+# Error in knn(train.X, test.X, train.Y, k = 500, prob = TRUE) : 
+# too many ties in knn
+
+# ROC curve of the best model
+plot_auc(as.numeric(pred_test_knn_400), df_test$TARGET)
 
 # ===================================================================================================
 # 6. Random Forest
