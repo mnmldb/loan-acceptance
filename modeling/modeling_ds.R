@@ -323,30 +323,8 @@ calc_auc(as.numeric(pred_test_knn_400), df_test$TARGET) # score: 0.6341206
 plot_auc(as.numeric(pred_test_knn_400), df_test$TARGET)
 
 # ===================================================================================================
-# 6. Random Forest
+# 6. Tree-based Methods
 # ===================================================================================================
-# Test: all variables
-set.seed(1)
-model_rf <- randomForest(TARGET~., data=df_train)
-pred_train_rf <- predict(model_rf, newdata=df_train)
-pred_test_rf <- predict(model_rf, newdata=df_test)
-importance(model_rf)
-
-calc_auc(pred_train_rf, df_train$TARGET) # score: 1
-calc_auc(pred_test_rf, df_test$TARGET) # score: 0.6528119
-plot_auc(pred_test_rf, df_test$TARGET)
-
-# Test: 4 variables
-model_rf_s <- randomForest(TARGET~DAYS_BIRTH+EXT_SOURCE_1+EXT_SOURCE_2+EXT_SOURCE_3, data=df_train)
-pred_train_rf_s <- predict(model_rf_s, newdata=df_train)
-pred_test_rf_s <- predict(model_rf_s, newdata=df_test)
-importance(model_rf_s)
-
-calc_auc(pred_train_rf_s, df_train$TARGET) # score: 0.9871939
-calc_auc(pred_test_rf_s, df_test$TARGET) # score: 0.6588263
-plot_auc(pred_test_rf_s, df_test$TARGET)
-
-
 #--- Decision Tree ---#
 set.seed(1)
 model_tree <- tree(TARGET~., df_train)
