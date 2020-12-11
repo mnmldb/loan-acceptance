@@ -64,7 +64,8 @@ df_test <- df_test_all[, colnames(df_test_all) %in% col_use]
 plot_auc <- function(pred, target) {
   prep <- prediction(pred, target)
   perf <- performance(prep, "tpr", "fpr")
-  plot(perf)
+  plot(perf) 
+  abline(a=0,b=1, lty=3)
 }
 
 # Function to return the AUC
@@ -263,21 +264,25 @@ set.seed(1)
 # folds <- sample(1:k, nrow(df_train), replace=TRUE)
 grid_neighbors <- c(1, 5, 10, 50, 100, 400) # number of ties
 cv_errors_knn <- matrix(NA, k, length(grid_neighbors), dimnames=list(NULL, paste(1:length(grid_neighbors))))
+cv_auc_knn <- matrix(NA, k, length(grid_neighbors), dimnames=list(NULL, paste(1:length(grid_neighbors))))
 
-# Loop folds and calculate each RSS
+# Loop folds and calculate each RSS and AUC
 for (j in 1:k) {
   for (i in 1:length(grid_neighbors)) {
     pred_cv_knn <- knn(train.X[folds != j, ], train.X[folds == j, ], train.Y[folds != j], k=i, prob=TRUE)
     cv_errors_knn[j, i] <- mean((df_train$TARGET[folds == j] - (as.numeric(pred_cv_knn) - 1)) ^ 2) # need to extract 1 after as.numeric()
+    cv_auc_knn[j, i] <- calc_auc(as.numeric(pred_cv_knn), df_train$TARGET[folds == j])
   }
 }  
 
-mean_cv_errors_knn
 # Confirm the best number of features
 mean_cv_errors_knn <- apply(cv_errors_knn ,2,mean)
-par(mfrow=c(1,1))
-plot(mean_cv_errors_knn ,type='b')
+mean_cv_auc_knn <- apply(cv_auc_knn ,2,mean)
+par(mfrow=c(1,2))
+plot(mean_cv_errors_knn ,type='b', xlab="k", ylab="CV RSS")
+plot(mean_cv_auc_knn ,type='b', xlab="k", ylab="CV AUC")
 best_neighbors <- grid_neighbors[which.min(mean_cv_errors_knn)] # 100
+mean_cv_auc_knn
 
 # Calculate Scores
 pred_train_knn_1 <- knn(train.X, train.X, train.Y, k=1, prob=TRUE)
@@ -340,3 +345,125 @@ importance(model_rf_s)
 calc_auc(pred_train_rf_s, df_train$TARGET) # score: 0.9871939
 calc_auc(pred_test_rf_s, df_test$TARGET) # score: 0.6588263
 plot_auc(pred_test_rf_s, df_test$TARGET)
+
+
+#--- Decision Tree ---#
+set.seed(1)
+model_tree <- tree(TARGET~., df_train)
+summary(model_tree) # only "INTER_EXT_SOURCE_2_3" and "INTER_EXT_SOURCE_3_1" are used
+# Number of terminal nodes:  4 
+
+par(mfrow=c(1,1))
+plot(model_tree)
+text(model_tree, pretty=0)
+
+pred_train_tree <- predict(model_tree, newdata=df_train)
+pred_test_tree <- predict(model_tree, newdata=df_test)
+calc_auc(pred_train_tree, df_train$TARGET) # score: 0.6915488
+calc_auc(pred_test_tree, df_test$TARGET) # score: 0.6862751
+plot_auc(pred_test_tree, df_test$TARGET)
+
+#--- Random Forest ---#
+#--- Approach 1 ---#
+# Get the best mtry by tuneRF()
+rf_tune <- tuneRF(
+  train.X, # reuse the data frame used for KNN
+  train.Y,
+  doBest=T
+) # mtry = 7 has the lowest OOB error
+plot(rf_tune)
+
+# Cross validation for the number of trees
+set.seed(1)
+# folds <- sample(1:k, nrow(df_train), replace=TRUE)
+grid_ntree <- c(100, 200, 300, 400, 500)
+cv_errors_rf <- matrix(NA, k, length(grid_ntree), dimnames=list(NULL, paste(1:length(grid_ntree))))
+cv_auc_rf <- matrix(NA, k, length(grid_ntree), dimnames=list(NULL, paste(1:length(grid_ntree))))
+
+for (j in 1:k) {
+  for (i in 1:length(grid_ntree)) {
+    model_cv_rf <- randomForest(TARGET~., data=df_train[folds != j, ], mtry=7)
+    pred_cv_rf <- predict(model_cv_rf, newdata=df_train[folds == j, ])
+    cv_auc_rf[j, i] <- calc_auc(pred_cv_rf, df_train$TARGET[folds == j])
+  }
+}  
+
+# Confirm the best number of trees
+mean_cv_auc_rf <- apply(cv_auc_rf , 2, mean)
+par(mfrow=c(1,1))
+plot(mean_cv_auc_rf ,type='b', xlab="k", ylab="CV AUC")
+best_ntree <- grid_ntree[which.min(mean_cv_auc_rf)] # 300
+mean_cv_auc_rf
+
+# Build the best model
+model_rf <- randomForest(TARGET~., data=df_train, mtry=7, ntree=300)
+pred_train_rf <- predict(model_rf, newdata=df_train)
+pred_test_rf <- predict(model_rf, newdata=df_test)
+importance(model_rf)
+calc_auc(pred_train_rf, df_train$TARGET) # score: 0.6915488
+calc_auc(pred_test_rf, df_test$TARGET) # score: 0.6545936
+plot_auc(pred_test_rf, df_test$TARGET) # score: 0.6545936
+
+# The best model with as.factor()
+# model_rf_n <- randomForest(as.factor(TARGET)~., data=df_train, mtry=7, ntree=300)
+# pred_train_rf_n <- predict(model_rf_n, newdata=df_train)
+# pred_test_rf_n <- predict(model_rf_n, newdata=df_test)
+# importance(model_rf)
+# calc_auc(as.numeric(pred_train_rf_n) - 1, df_train$TARGET) # score: 1
+# calc_auc(as.numeric(pred_test_rf) - 1, df_test$TARGET) # score: 0.6545931
+
+#--- Approach 2 ---#
+str(train)
+train$TARGET = as.factor(train$TARGET)
+
+# Test: all variables
+modelrf <- randomForest(TARGET ~ ., data = train, ntree = 100, mtry = 8, importance = TRUE)
+modelrf
+
+# Fiting into the model for all the variables
+modelrf_imp <- randomForest(TARGET~., data = train, ntree = 100, mtry = 8, importance = TRUE)
+confusionMatrix(table(modelrf_imp$predicted,train$TARGET)) #Accurecy score: 0.6651
+pred_train = predict(modelrf,newdata = train)
+pred_test = predict(modelrf,newdata=test)
+
+# ROC for trainset
+pred_train <- predict(modelrf,train,type ="prob")
+pred_train <- prediction(pred_train[,2],train$TARGET)
+roc <- performance(pred_train,"tpr","fpr")
+plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
+abline(a=0,b=1)
+
+# ROC for testset
+pred_test <- predict(modelrf,test,type ="prob")
+pred_test <- prediction(pred_test[,2],test$TARGET)
+roc <- performance(pred_test,"tpr","fpr")
+plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
+abline(a=0,b=1)
+
+# Test model with important feature
+imp <- importance(modelrf,type=1,sort=TRUE)
+impvar <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
+impvar
+
+# Choosing the model mapping
+fit <- TARGET ~ INTER_EXT_SOURCE_2_3+INTER_EXT_SOURCE_3_1+INTER_EXT_SOURCE_1_2+EXT_SOURCE_3+EXT_SOURCE_2
+
+# Fiting into the model with important variables
+modelrf_imp <- randomForest(fit, data = train, ntree = 100, mtry = 8, importance = TRUE)
+confusionMatrix(table(modelrf_imp$predicted,train$TARGET)) #Accurecy Score:
+
+# ROC for important variables
+pred_train <- predict(modelrf_imp,train,type ="prob")
+pred_train <- prediction(pred_train[,2],train$TARGET)
+roc <- performance(pred_train,"tpr","fpr")
+plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
+abline(a=0,b=1)
+
+# Cross validation
+control <- trainControl(method="repeatedcv", number=10, repeats=1, search="grid")
+tunegrid <- expand.grid(.mtry = c(4,6,8,10),.ntree=c(100,150))
+rf_gridsearch <- train(TARGET ~ ., data = train, method ="rf", metric ="Accuracy", tuneGrid = tunegrid)
+print(rf_gridsearch)
+plot(rf_gridsearch)
+rf_gridsearch$final_model
+predict(rf_gridsearch$final_model,test)
