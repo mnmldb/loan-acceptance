@@ -392,31 +392,40 @@ plot_auc(pred_test_rf, df_test$TARGET) # score: 0.6545936
 
 #--- Approach 2 ---#
 str(train)
-train$TARGET = as.factor(train$TARGET)
+df_train$TARGET = as.factor(df_train$TARGET)
+set.seed(1)
 
 # Test: all variables
-modelrf <- randomForest(TARGET ~ ., data = train, ntree = 100, mtry = 8, importance = TRUE)
+modelrf <- randomForest(TARGET ~ ., data = df_train, ntree = 100, mtry = 8, importance = TRUE)
 modelrf
 
-# Fiting into the model for all the variables
-modelrf_imp <- randomForest(TARGET~., data = train, ntree = 100, mtry = 8, importance = TRUE)
-confusionMatrix(table(modelrf_imp$predicted,train$TARGET)) #Accurecy score: 0.6651
-pred_train = predict(modelrf,newdata = train)
-pred_test = predict(modelrf,newdata=test)
+# Fitting into the model for all the variables
+modelrf_imp <- randomForest(TARGET~., data = df_train, ntree = 100, mtry = 8, importance = TRUE)
+confusionMatrix(table(modelrf_imp$predicted,df_train$TARGET)) #Accuracy score: 0.657
+pred_train = predict(modelrf,newdata = df_train)
+pred_test = predict(modelrf,newdata=df_test)
+confusionMatrix(table(pred_test,df_test$TARGET)) #Accuracy score: 0.5203
 
-# ROC for trainset
-pred_train <- predict(modelrf,train,type ="prob")
-pred_train <- prediction(pred_train[,2],train$TARGET)
+
+# ROC for train set
+pred_train <- predict(modelrf,df_train,type = 'prob')
+pred_train <- prediction(pred_train[,2],df_train$TARGET)
 roc <- performance(pred_train,"tpr","fpr")
 plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
 abline(a=0,b=1)
 
+
 # ROC for testset
-pred_test <- predict(modelrf,test,type ="prob")
-pred_test <- prediction(pred_test[,2],test$TARGET)
+pred_test <- predict(modelrf,df_test,type ="prob")
+pred_test <- prediction(pred_test[,2],df_test$TARGET)
 roc <- performance(pred_test,"tpr","fpr")
 plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
 abline(a=0,b=1)
+
+# Cross Validation
+pred_test = predict(rf_gridsearch$finalModel,newdata = df_test)
+auc_roc(pred_test,df_test$TARGET) #Accuracy Score: 0.6137
+
 
 # Test model with important feature
 imp <- importance(modelrf,type=1,sort=TRUE)
@@ -426,22 +435,17 @@ impvar
 # Choosing the model mapping
 fit <- TARGET ~ INTER_EXT_SOURCE_2_3+INTER_EXT_SOURCE_3_1+INTER_EXT_SOURCE_1_2+EXT_SOURCE_3+EXT_SOURCE_2
 
-# Fiting into the model with important variables
-modelrf_imp <- randomForest(fit, data = train, ntree = 100, mtry = 8, importance = TRUE)
-confusionMatrix(table(modelrf_imp$predicted,train$TARGET)) #Accurecy Score:
+# Fitting into the model with important variables
+modelrf_imp <- randomForest(fit, data = df_train, ntree = 100, mtry = 8, importance = TRUE)
+confusionMatrix(table(modelrf_imp$predicted,df_train$TARGET)) #Accuracy Score: 0.6131
 
 # ROC for important variables
-pred_train <- predict(modelrf_imp,train,type ="prob")
-pred_train <- prediction(pred_train[,2],train$TARGET)
+pred_train <- predict(modelrf_imp,df_train,type ="prob")
+pred_train <- prediction(pred_train[,2],df_train$TARGET)
 roc <- performance(pred_train,"tpr","fpr")
 plot(roc,colorize=T,main="ROC curve",xlab="1-Specificity",ylab="Sensitivity")
 abline(a=0,b=1)
 
-# Cross validation
-control <- trainControl(method="repeatedcv", number=10, repeats=1, search="grid")
-tunegrid <- expand.grid(.mtry = c(4,6,8,10),.ntree=c(100,150))
-rf_gridsearch <- train(TARGET ~ ., data = train, method ="rf", metric ="Accuracy", tuneGrid = tunegrid)
-print(rf_gridsearch)
-plot(rf_gridsearch)
-rf_gridsearch$final_model
-predict(rf_gridsearch$final_model,test)
+# Cross validation for important variables
+control <- trainControl(method="repeatedcv", number=3, repeats=1, search="grid")
+tunegrid <- expand.grid(.mtry = c(4,6))
