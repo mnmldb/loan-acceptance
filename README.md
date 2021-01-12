@@ -7,7 +7,6 @@ Data is from [Home Credit Default Risk](https://www.kaggle.com/c/home-credit-def
 categorical features, 34 semi-categorical features, 18 integer features, 52 numeric features, and 1 surrogate key.
 
 ## Folder Structure
-as of December 2nd
 ~~~
 .
 ├── train_test_split                    # Data splitting
